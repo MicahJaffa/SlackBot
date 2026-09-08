@@ -1,15 +1,24 @@
 import os
-from slack_bolt import App
-from slack_bolt.adapter.socket_mode import SocketModeHandler
+import schedule
+import time
+from dotenv import load_dotenv
+from slack_bot import post_jobs
+from job_search import get_jobs
 
+load_dotenv()
 
-app = App(token=os.environ["SLACK_BOT_TOKEN"])
+def run():
+    print("Fetching jobs...")
+    jobs = get_jobs()
+    post_jobs(jobs)
+    print(f"Posted {len(jobs)} jobs!")
 
-CHANNEL_ID = "C0C0H887J5A"
-
-def send_greeting():
-    app.client.chat_postMessage(channel=CHANNEL_ID, text="Hi")
+schedule.every().day.at("09:00").do(run)
+schedule.every().day.at("17:00").do(run)
 
 if __name__ == "__main__":
-    send_greeting()
-    SocketModeHandler(app, os.environ["SLACK_APP_TOKEN"]).start()
+    print("Bot is running!")
+    run()
+    while True:
+        schedule.run_pending()
+        time.sleep(60)
