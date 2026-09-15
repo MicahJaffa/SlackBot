@@ -20,47 +20,75 @@ QUERIES = [
 ]
 
 TARGET_EMPLOYERS = [
-    # Pro Sports Leagues
+    "Teamworks", "Athlete", "NIL",
     "NFL", "NBA", "MLB", "NHL", "MLS", "PGA", "NASCAR", "UFC",
-    # Sports Media
     "ESPN", "Fox Sports", "NBC Sports", "CBS Sports", "Turner Sports",
     "Bleacher Report", "The Athletic", "Sports Illustrated",
-    # Sportswear & Equipment
     "Nike", "Adidas", "Under Armour", "New Balance", "Puma",
     "Gatorade", "Powerade", "Wilson", "Callaway",
-    # Sports Business
     "Red Bull", "Fanatics", "Ticketmaster", "Live Nation",
     "Sportradar", "Stats Perform",
-    # Sports Agencies
     "WME Sports", "CAA Sports", "Wasserman", "Endeavor",
     "IMG", "Octagon",
-    # Universities
     "University of Florida", "Florida Gators",
-    # NIL Specific
-    "Athlete", "NIL", "Opendorse", "Teamworks"
+    "Opendorse" 
 ]
+SENIOR_KEYWORDS = [
+    "senior", "director", "manager", "lead", "principal", 
+    "head", "chief", "vp ", "sr ", "sr."
+]
+def is_entry_level(job):
+    title = job.get("job_title", "").lower()
+    if not title:
+        return False
+    return not any(keyword in title for keyword in SENIOR_KEYWORDS)
 def is_target_employer(job):
-    employer = job.get("employer_name", "").lower()
-    return any(target.lower() in employer for target in TARGET_EMPLOYERS)
+    employer = job.get("employer_name", "")
+    if not employer:
+        return False
+    return any(target.lower() in employer.lower() for target in TARGET_EMPLOYERS)
 
 def get_jobs():
     url = "https://jsearch.p.rapidapi.com/search-v2"
     headers = {
-        "x-rapidapi-key": os.environ["RAPIDAPI_KEY"],
+        "x-rapidapi-key": os.environ.get("RAPIDAPI_KEY"),
         "x-rapidapi-host": "jsearch.p.rapidapi.com",
-        "Content-Type": "application/json"
     }
+    
     all_jobs = []
-    for query in QUERIES:
+    
+    for employer in TARGET_EMPLOYERS:
+        
+
+        search_term = f"{employer} -senior -manager -director -vp"
+        
         querystring = {
-            "query": query,
-            "num_pages": "1",
+            "query": search_term,
+            "num_pages": "2",
             "country": "us",
-            "date_posted": "week",
+            "date_posted": "month",
             "employment_types": "INTERN,FULLTIME"
         }
-        response = requests.get(url, headers=headers, params=querystring)
-        jobs = response.json().get("data", {}).get("jobs", [])
-        filtered = [job for job in jobs if is_target_employer(job)]
-        all_jobs.extend(filtered)
+        
+        try:
+            response = requests.get(url, headers=headers, params=querystring)
+            response.raise_for_status() 
+            
+            jobs = response.json().get("data", {}).get("jobs", [])
+            print(f"Scraped {len(jobs)} jobs searching for '{employer}'...")
+            
+
+            filtered = [
+                job for job in jobs 
+                if is_target_employer(job) and is_entry_level(job)
+            ]
+            
+            if filtered:
+                print(f"  Kept {len(filtered)} target jobs.")
+                
+            all_jobs.extend(filtered)
+            
+        except Exception as e:
+            print(f"API Error on employer '{employer}': {e}")
+            
     return all_jobs
