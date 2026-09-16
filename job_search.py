@@ -80,7 +80,7 @@ DIVISION_BUZZWORDS = [
     # AI & Analytics
     "analytics", "data", "ai", "artificial intelligence", "analyst", "insights"
 ]
-DIVISION_QUERIES = {
+"""DIVISION_QUERIES = {
     "Multimedia": [
         "sports multimedia",
         "athletic department video production",
@@ -89,17 +89,44 @@ DIVISION_QUERIES = {
         "sports videographer",
         "broadcast production assistant sports",
         "sports video editor",
-        "multimedia intern athletics",
+        "multimedia athletics",
+        "sports broadcast",
+        "sports livestream operator",
+        "athletics video coordinator",
+        "sports camera operator",
+        "sports media production",
+        "college athletics videographer",
+        "sports highlight editor",
+        "sports production",
+        "college media production",
+        "sports broadcasting",
+        "digital media sports",
+        "athletics media",
+        "sports film",
+        "video production athletics",
+        "sports media coordinator",
     ],
     "Graphic Design": [
         "sports graphic design",
         "athletic department creative services",
         "sports visual branding",
-        "sports graphic design intern",
         "athletic department designer",
         "sports branding designer",
-        "sports creative services intern",
+        "sports creative services",
         "sports motion graphics",
+        "sports art director",
+        "athletics visual content",
+        "sports digital designer",
+        "college athletics graphic designer",
+        "sports print design",
+        "athletics brand identity",
+        "sports creative",
+        "athletics design",
+        "sports visual media",
+        "college sports design",
+        "sports marketing design",
+        "digital design athletics",
+        "sports brand design",
     ],
     "Account Management": [
         "sports account coordinator",
@@ -108,18 +135,46 @@ DIVISION_QUERIES = {
         "sports client coordinator",
         "NIL coordinator",
         "athlete relations coordinator",
-        "sports account manager intern",
         "college athletics account coordinator",
+        "sports client services",
+        "NIL talent manager",
+        "sports agency coordinator",
+        "athlete management",
+        "sports business development",
+        "college sports account executive",
+        "NIL athlete coordinator",
+        "sports relationship manager",
+        "athlete services",
+        "sports operations coordinator",
+        "NIL management",
+        "sports talent coordinator",
+        "college athletics coordinator",
+        "sports agency",
+        "athlete brand management",
     ],
     "Social Media": [
         "sports social media coordinator",
         "sports digital media assistant",
         "athletic department social media",
-        "sports social media intern",
         "sports content coordinator",
         "college athletics social media",
         "sports instagram tiktok coordinator",
         "sports digital content creator",
+        "sports social media manager",
+        "athletics online content",
+        "sports community manager",
+        "sports twitter coordinator",
+        "college sports content",
+        "sports influencer coordinator",
+        "sports fan engagement",
+        "sports content strategy",
+        "athletics content",
+        "sports digital marketing",
+        "college sports digital",
+        "sports online media",
+        "sports content marketing",
+        "athletics digital media",
+        "sports media manager",
     ],
     "Client Acquisition & Sponsorships": [
         "sports sponsorship activation",
@@ -129,17 +184,76 @@ DIVISION_QUERIES = {
         "sports corporate partnerships",
         "sports partnership sales",
         "NIL brand partnerships",
-        "sports sponsorship intern",
+        "sports revenue partnerships",
+        "sports brand activation",
+        "college athletics sponsorship",
+        "sports partnership development",
+        "sports sales coordinator",
+        "NIL deal coordinator",
+        "sports partnership activation",
+        "sports business partnerships",
+        "athletics sponsorship",
+        "sports corporate sales",
+        "sports marketing partnerships",
+        "sports revenue generation",
+        "college sports sponsorship",
+        "sports brand deals",
+        "sports partnership marketing",
     ],
     "AI & Analytics": [
         "sports data analyst",
         "sports marketing analytics",
         "athletic department data analyst",
-        "sports analytics intern",
+        "sports analytics",
         "sports business intelligence",
         "sports performance analyst",
         "sports technology analyst",
         "college athletics analytics",
+        "sports machine learning",
+        "sports data science",
+        "athlete performance data",
+        "sports AI",
+        "sports fan analytics",
+        "sports predictive analytics",
+        "college sports data",
+        "sports technology",
+        "athletics data",
+        "sports research analyst",
+        "sports quantitative analyst",
+        "sports operations analytics",
+        "sports intelligence",
+        "sports insights analyst",
+    ],
+}"""
+DIVISION_QUERIES = {
+    "Multimedia": [
+        "sports (videographer OR video production OR broadcast)",
+        "athletic department (multimedia OR content creator)",
+        "sports (highlight editor OR media coordinator)",
+    ],
+    "Graphic Design": [
+        "sports (graphic designer OR visual branding)",
+        "athletic department (creative services OR motion graphics)",
+    ],
+    "Account Management": [
+        "sports (account coordinator OR agency account executive)",
+        "NIL (coordinator OR account manager OR talent manager)",
+        "athlete relations coordinator",
+    ],
+    "Social Media": [
+        "sports (social media coordinator OR digital media assistant)",
+        "athletic department social media",
+        "sports digital content creator",
+    ],
+    "Client Acquisition & Sponsorships": [
+        "sports (sponsorship activation OR partnership coordinator)",
+        "NIL (partnerships OR brand deals)",
+        "sports corporate partnerships",
+    ],
+    "AI & Analytics": [
+        "sports (data analyst OR business intelligence)",
+        "sports (analytics OR performance analyst)",
+        "athletic department data analyst",
     ],
 }
 ROLE_BLACKLIST = [
@@ -218,17 +332,18 @@ def get_jobs() -> list:
     print(f"Running {len(DIVISION_QUERIES)} queries...")
 
     with requests.Session() as session:
-        for index, query in enumerate(DIVISION_QUERIES, 1):
-            querystring = {
-                "query": DIVISION_QUERIES[query],
-                "num_pages": "3",
-                "country": "us",
-                "date_posted": "month",
-                "employment_types": "INTERN",
-            }
+        for division, queries in DIVISION_QUERIES.items():
+            for search_term in queries:
+                querystring = {
+                    "query": search_term,
+                    "num_pages": "3",
+                    "country": "us",
+                    "date_posted": "month",
+                    "employment_types": "INTERN",
+                 }
 
             try:
-                print(f"[{index}/{len(DIVISION_QUERIES)}] Searching: '{query}'...")
+                print(f"[0/{len(DIVISION_QUERIES)}] Searching: '{division}'...")
                 response = session.get(url, headers=headers, params=querystring, timeout=timeout)
                 response.raise_for_status()
 
@@ -248,11 +363,33 @@ def get_jobs() -> list:
                     if job_id in seen_ids:
                         print(f"Skipping job {job_id}")
                         continue
-                    job["agency_division"] = query
+                    job["agency_division"] = division
                     all_jobs.append(job)
                     save_posted_job(job_id)
                     print(f"{job.get('job_title')} @ {job.get('employer_name')} → {job.get('agency_division')}")
+            except requests.exceptions.HTTPError as e:
+                status = response.status_code
+                error_body = response.text.lower()
 
+                # RapidAPI returns 429 (quota exceeded) or 403 (unauthorized/exhausted plan)
+                if status == 429 or (status == 403 and "quota" in error_body) or "exceeded" in error_body:
+                    print("RapidAPI monthly credit quota exhausted.")
+                    credit_alert_job = {
+                        "job_title": "out of credits",
+                        "employer_name": "RapidAPI Alert",
+                        "job_city": "N/A",
+                        "job_country": "N/A",
+                        "job_employment_type": "N/A",
+                        "agency_division": "System",
+                        "job_apply_link": "https://rapidapi.com"
+                    }
+                    if not all_jobs:
+                        all_jobs.append(credit_alert_job)
+                    else:
+                        all_jobs[0] = credit_alert_job
+                    return all_jobs
+
+                print(f"HTTP Error: {e}")
             except requests.exceptions.Timeout:
                 print(f"Query timed out. Skipping.")
             except Exception as e:

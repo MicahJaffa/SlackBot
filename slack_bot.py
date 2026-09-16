@@ -8,6 +8,10 @@ app = App(token=os.environ["SLACK_BOT_TOKEN"])
 def post_jobs(jobs):
     
     channel = os.environ["CHANNEL_ID"]
+    if jobs:
+        if jobs[0].get('job_title', 'N/A') == "out of credits":
+            app.client.chat_postMessage(channel=channel, text="Error: Out of credits")
+            return
     #app.client.chat_postMessage(channel=channel, text="test")
     for job in jobs:
         message = (
