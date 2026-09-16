@@ -2,8 +2,8 @@ name: targeted-job-alerts-bot
 
 on:
   schedule:
-    # 13:00 UTC corresponds to 9:00 AM EDT. Runs Tuesdays (2) and Thursdays (4).
-    - cron: '32 19 * * 3,4'
+  
+    - cron: '40 19 * * 3,4'
   workflow_dispatch:
 
 permissions:
