@@ -1,22 +1,40 @@
 import os
 import requests
+import time
 from dotenv import load_dotenv
 
 load_dotenv()
 
 QUERIES = [
-    "sports marketing entry level",
-    "sports media entry level",
-    "sports communications entry level",
-    "athletic department marketing",
+    # Multimedia
+    "sports multimedia",
+    "athletic department video production",
     "sports content creator",
-    "sports social media manager",
-    "sports public relations",
-    "NIL marketing",
-    "sports broadcasting entry level",
-    "sports journalism entry level",
-    "sports sponsorship entry level",
-    "sports digital media"
+    
+    # Graphic Design
+    "sports graphic design",
+    "athletic department creative services",
+    "sports visual branding",
+    
+    # Account Management
+    "sports account coordinator",
+    "sports agency account executive",
+    "NIL account manager",
+    
+    # Social Media
+    "sports social media coordinator",
+    "sports digital media assistant",
+    "athletic department social media",
+    
+    # Client Acquisition & Sponsorships
+    "sports sponsorship activation",
+    "sports partnership coordinator",
+    "NIL partnerships",
+    
+    # AI & Analytics
+    "sports data analyst",
+    "sports marketing analytics",
+    "athletic department data analyst"
 ]
 
 TARGET_EMPLOYERS = [
@@ -35,60 +53,212 @@ TARGET_EMPLOYERS = [
 ]
 SENIOR_KEYWORDS = [
     "senior", "director", "manager", "lead", "principal", 
-    "head", "chief", "vp ", "sr ", "sr."
+    "head", "chief", "vp ", "sr ", "sr.", "executive", "specialist", "account executive", " iii", " ii", " iv"
 ]
+JUNK_KEYWORDS = [
+    "warehouse", "retail", "store", "cashier", "shift", 
+    "packaging", "merchandise", "loss prevention", "stock",
+    "delivery", "seasonal", "freight", "freelance", "part-time freelance", "championship", "national championship",
+    "foosball", "unpaid", "freelance"
+]
+DIVISION_BUZZWORDS = [
+    # Multimedia
+    "video", "multimedia", "production", "videographer", "editor", "broadcast", 
+    
+    # Graphic Design
+    "graphic", "design", "visual", "creative", "branding", "illustrator",
+    
+    # Account Management
+    "account", "client", "coordinator", "executive", "liaison",
+    
+    # Social Media
+    "social media", "content", "community", "tiktok", "instagram", "digital media",
+    
+    # Client Acquisition & Sponsorships
+    "sponsorship", "partnership", "activation", "acquisition", "nil", "sales",
+    
+    # AI & Analytics
+    "analytics", "data", "ai", "artificial intelligence", "analyst", "insights"
+]
+DIVISION_QUERIES = {
+    "Multimedia": [
+        "sports multimedia",
+        "athletic department video production",
+        "sports content creator",
+        "sports video producer",
+        "sports videographer",
+        "broadcast production assistant sports",
+        "sports video editor",
+        "multimedia intern athletics",
+    ],
+    "Graphic Design": [
+        "sports graphic design",
+        "athletic department creative services",
+        "sports visual branding",
+        "sports graphic design intern",
+        "athletic department designer",
+        "sports branding designer",
+        "sports creative services intern",
+        "sports motion graphics",
+    ],
+    "Account Management": [
+        "sports account coordinator",
+        "sports agency account executive",
+        "NIL account manager",
+        "sports client coordinator",
+        "NIL coordinator",
+        "athlete relations coordinator",
+        "sports account manager intern",
+        "college athletics account coordinator",
+    ],
+    "Social Media": [
+        "sports social media coordinator",
+        "sports digital media assistant",
+        "athletic department social media",
+        "sports social media intern",
+        "sports content coordinator",
+        "college athletics social media",
+        "sports instagram tiktok coordinator",
+        "sports digital content creator",
+    ],
+    "Client Acquisition & Sponsorships": [
+        "sports sponsorship activation",
+        "sports partnership coordinator",
+        "NIL partnerships",
+        "sports sponsorship coordinator",
+        "sports corporate partnerships",
+        "sports partnership sales",
+        "NIL brand partnerships",
+        "sports sponsorship intern",
+    ],
+    "AI & Analytics": [
+        "sports data analyst",
+        "sports marketing analytics",
+        "athletic department data analyst",
+        "sports analytics intern",
+        "sports business intelligence",
+        "sports performance analyst",
+        "sports technology analyst",
+        "college athletics analytics",
+    ],
+}
+ROLE_BLACKLIST = [
+    "reporter", "anchor", "journalist", "news", "correspondent",
+]
+TRUSTED_DOMAINS = [
+    "linkedin.com", "teamworkonline.com", "workdayjobs.com",
+    "greenhouse.io", "lever.co", "indeed.com", "nfl.com",
+    "nba.com", "mlb.com", "espncareers.com", "nike.com"
+]
+
+def is_trusted_source(job: dict) -> bool:
+    url = job.get("job_apply_link", "") or job.get("job_google_link", "")
+    return any(domain in url for domain in TRUSTED_DOMAINS)
+def assign_division(job):
+    title = job.get("job_title", "").lower()
+    description = job.get("job_description", "").lower()
+    full_text = f"{title} {description}"
+    
+    matched_divisions = []
+    
+    for division_name, buzzwords in DIVISIONS.items():
+        if any(buzzword in full_text for buzzword in buzzwords):
+            matched_divisions.append(division_name)
+            
+    if matched_divisions:
+        job["agency_division"] = ", ".join(matched_divisions)
+        return True
+        
+    return False
+def has_buzzword(job):
+    title = job.get("job_title", "").lower()
+    description = job.get("job_description", "").lower()
+
+    full_text = f"{title} {description}"
+    
+    return any(buzzword in full_text for buzzword in DIVISION_BUZZWORDS)
 def is_entry_level(job):
     title = job.get("job_title", "").lower()
     if not title:
         return False
-    return not any(keyword in title for keyword in SENIOR_KEYWORDS)
+    if any(keyword in title for keyword in SENIOR_KEYWORDS):
+        return False
+    if any(keyword in title for keyword in JUNK_KEYWORDS):
+        return False
+    #if any(keyword in title for keyword in ROLE_BLACKLIST):
+       # return False
+    return True
 def is_target_employer(job):
     employer = job.get("employer_name", "")
     if not employer:
         return False
     return any(target.lower() in employer.lower() for target in TARGET_EMPLOYERS)
 
-def get_jobs():
+def is_entry_level(job):
+    title = job.get("job_title", "").lower()
+    if not title:
+        return False
+    return not any(keyword in title for keyword in SENIOR_KEYWORDS)
+
+def is_target_employer(job):
+    employer = job.get("employer_name", "")
+    if not employer:
+        return False
+    return any(target.lower() in employer.lower() for target in TARGET_EMPLOYERS)
+def get_jobs() -> list:
+
     url = "https://jsearch.p.rapidapi.com/search-v2"
     headers = {
         "x-rapidapi-key": os.environ.get("RAPIDAPI_KEY"),
         "x-rapidapi-host": "jsearch.p.rapidapi.com",
     }
-    
+
     all_jobs = []
-    
-    for employer in TARGET_EMPLOYERS:
-        
+    seen_ids = set()
+    timeout = 120
 
-        search_term = f"{employer} -senior -manager -director -vp"
-        
-        querystring = {
-            "query": search_term,
-            "num_pages": "2",
-            "country": "us",
-            "date_posted": "month",
-            "employment_types": "INTERN,FULLTIME"
-        }
-        
-        try:
-            response = requests.get(url, headers=headers, params=querystring)
-            response.raise_for_status() 
-            
-            jobs = response.json().get("data", {}).get("jobs", [])
-            print(f"Scraped {len(jobs)} jobs searching for '{employer}'...")
-            
+    print(f"Running {len(DIVISION_QUERIES)} queries...")
 
-            filtered = [
-                job for job in jobs 
-                if is_target_employer(job) and is_entry_level(job)
-            ]
-            
-            if filtered:
-                print(f"  Kept {len(filtered)} target jobs.")
-                
-            all_jobs.extend(filtered)
-            
-        except Exception as e:
-            print(f"API Error on employer '{employer}': {e}")
-            
+    with requests.Session() as session:
+        for index, query in enumerate(DIVISION_QUERIES, 1):
+            querystring = {
+                "query": DIVISION_QUERIES[query],
+                "num_pages": "10",
+                "country": "us",
+                "date_posted": "month",
+                "employment_types": "INTERN,FULLTIME",
+            }
+
+            try:
+                print(f"[{index}/{len(DIVISION_QUERIES)}] Searching: '{query}'...")
+                response = session.get(url, headers=headers, params=querystring, timeout=timeout)
+                response.raise_for_status()
+
+                data = response.json().get("data", {})
+                jobs = data if isinstance(data, list) else data.get("jobs", [])
+
+                for job in jobs:
+                    job_id = job.get("job_id")
+                    if job_id and job_id in seen_ids:
+                        continue
+                    if not is_entry_level(job):
+                        continue
+                    if not has_buzzword(job):
+                        continue
+                    if not is_trusted_source(job):
+                        continue
+                    job["agency_division"] = query
+                    if job_id:
+                        seen_ids.add(job_id)
+                    all_jobs.append(job)
+                    print(f"{job.get('job_title')} @ {job.get('employer_name')} → {job.get('agency_division')}")
+
+            except requests.exceptions.Timeout:
+                print(f"Query timed out. Skipping.")
+            except Exception as e:
+                print(f"API Error: {e}")
+
+            time.sleep(2)
+
+    print(f"\nTotal unique matching jobs: {len(all_jobs)}")
     return all_jobs
