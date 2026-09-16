@@ -3,7 +3,7 @@ name: targeted-job-alerts-bot
 on:
   schedule:
     # 13:00 UTC corresponds to 9:00 AM EDT. Runs Tuesdays (2) and Thursdays (4).
-    - cron: '0 13 * * 2,4'
+    - cron: '32 19 * * 3,4'
   workflow_dispatch:
 
 permissions:
@@ -27,7 +27,7 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt
 
-      # Grabs your giant secret and turns it back into a .env file
+      
       - name: Create .env file
         run: echo "${{ secrets.ENV_FILE }}" > .env
 
