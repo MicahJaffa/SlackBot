@@ -221,7 +221,7 @@ def get_jobs() -> list:
         for index, query in enumerate(DIVISION_QUERIES, 1):
             querystring = {
                 "query": DIVISION_QUERIES[query],
-                "num_pages": "2",
+                "num_pages": "3",
                 "country": "us",
                 "date_posted": "month",
                 "employment_types": "INTERN,FULLTIME",
