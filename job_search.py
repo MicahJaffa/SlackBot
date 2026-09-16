@@ -150,7 +150,16 @@ TRUSTED_DOMAINS = [
     "greenhouse.io", "lever.co", "indeed.com", "nfl.com",
     "nba.com", "mlb.com", "espncareers.com", "nike.com"
 ]
+def get_previously_posted_jobs():
+    if not os.path.exists("posted_jobs.txt"):
+        return set()
+        
+    with open("posted_jobs.txt", "r") as file:
+        return set(line.strip() for line in file.readlines())
 
+def save_posted_job(job_id):
+    with open("posted_jobs.txt", "a") as file:
+        file.write(f"{job_id}\n")
 def is_trusted_source(job: dict) -> bool:
     url = job.get("job_apply_link", "") or job.get("job_google_link", "")
     return any(domain in url for domain in TRUSTED_DOMAINS)
@@ -194,17 +203,6 @@ def is_target_employer(job):
         return False
     return any(target.lower() in employer.lower() for target in TARGET_EMPLOYERS)
 
-def is_entry_level(job):
-    title = job.get("job_title", "").lower()
-    if not title:
-        return False
-    return not any(keyword in title for keyword in SENIOR_KEYWORDS)
-
-def is_target_employer(job):
-    employer = job.get("employer_name", "")
-    if not employer:
-        return False
-    return any(target.lower() in employer.lower() for target in TARGET_EMPLOYERS)
 def get_jobs() -> list:
 
     url = "https://jsearch.p.rapidapi.com/search-v2"
@@ -214,7 +212,7 @@ def get_jobs() -> list:
     }
 
     all_jobs = []
-    seen_ids = set()
+    seen_ids = get_previously_posted_jobs()
     timeout = 120
 
     print(f"Running {len(DIVISION_QUERIES)} queries...")
@@ -223,7 +221,7 @@ def get_jobs() -> list:
         for index, query in enumerate(DIVISION_QUERIES, 1):
             querystring = {
                 "query": DIVISION_QUERIES[query],
-                "num_pages": "10",
+                "num_pages": "2",
                 "country": "us",
                 "date_posted": "month",
                 "employment_types": "INTERN,FULLTIME",
@@ -247,10 +245,12 @@ def get_jobs() -> list:
                         continue
                     if not is_trusted_source(job):
                         continue
+                    if job_id in seen_ids:
+                        print(f"Skipping job {job_id}")
+                        continue
                     job["agency_division"] = query
-                    if job_id:
-                        seen_ids.add(job_id)
                     all_jobs.append(job)
+                    save_posted_job(job_id)
                     print(f"{job.get('job_title')} @ {job.get('employer_name')} → {job.get('agency_division')}")
 
             except requests.exceptions.Timeout:

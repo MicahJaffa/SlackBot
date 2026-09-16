@@ -8,7 +8,7 @@ app = App(token=os.environ["SLACK_BOT_TOKEN"])
 def post_jobs(jobs):
     
     channel = os.environ["CHANNEL_ID"]
-    app.client.chat_postMessage(channel=channel, text="test")
+    #app.client.chat_postMessage(channel=channel, text="test")
     for job in jobs:
         message = (
             f" *New Job Alert!*\n"
