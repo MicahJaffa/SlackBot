@@ -224,7 +224,7 @@ def get_jobs() -> list:
                 "num_pages": "3",
                 "country": "us",
                 "date_posted": "month",
-                "employment_types": "INTERN,FULLTIME",
+                "employment_types": "INTERN",
             }
 
             try:
