@@ -3,7 +3,7 @@ name: targeted-job-alerts-bot
 on:
   schedule:
   
-    - cron: '30 20 * * 3,4'
+    - cron: '00 21 * * 2,4'
   workflow_dispatch:
 
 permissions:
